@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gerador de Assinatura HTML - RST Logistics</title>
+  <style>
+    :root { --b:#e5e7eb; --t:#111827; --m:#6b7280; --bg:#f9fafb; }
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:var(--bg);color:var(--t);}
+    .wrap{max-width:1100px;margin:24px auto;padding:0 16px;}
+    .grid{display:grid;grid-template-columns: 380px 1fr;gap:16px;align-items:start;}
+    @media (max-width: 900px){ .grid{grid-template-columns:1fr;} }
+    .card{background:#fff;border:1px solid var(--b);border-radius:14px;box-shadow:0 1px 10px rgba(0,0,0,.04);}
+    .card h2{margin:0;padding:14px 14px 0 14px;font-size:16px;}
+    .card .content{padding:14px;}
+    label{display:block;font-size:12px;color:var(--m);margin:10px 0 6px;}
+    input[type="text"], input[type="email"], textarea{
+      width:100%; box-sizing:border-box; padding:10px 12px; border:1px solid var(--b);
+      border-radius:10px; outline:none; font-family:inherit;
+    }
+    textarea{min-height:86px; resize:vertical;}
+    input:focus, textarea:focus{border-color:#93c5fd; box-shadow:0 0 0 3px rgba(59,130,246,.15);}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+    .row .pill{display:flex;gap:10px;align-items:center;border:1px solid var(--b);padding:10px 12px;border-radius:12px;}
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      border:1px solid var(--b); background:#111827; color:#fff; padding:10px 12px;
+      border-radius:12px; cursor:pointer; font-weight:600;
+    }
+    .btn.secondary{background:#fff;color:#111827;}
+    .hint{font-size:12px;color:var(--m);margin-top:8px;line-height:1.35;}
+    .ok{font-size:12px;color:#065f46;background:#ecfdf5;border:1px solid #a7f3d0;padding:10px 12px;border-radius:12px;display:none;margin-top:10px;}
+    .danger{color:#991b1b; background:#fef2f2; border:1px solid #fecaca; padding:10px 12px; border-radius:12px; display:none; margin-top:10px;}
+    .previewBox{
+      border:1px dashed var(--b); border-radius:12px; background:#fff; padding:14px; overflow:auto;
+      min-height:220px;
+    }
+    .muted{color:var(--m); font-size:12px; margin:6px 0 0;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="grid">
+      <!-- FORM -->
+      <div class="card">
+        <h2>Dados do colaborador</h2>
+        <div class="content">
+          <label>Nome de exibição (digite só o nome — “ - RST Logistics” é automático)</label>
+          <input id="displayName" type="text" placeholder="Ex.: Marcelo Fernando Oliveira Lima" />
+
+          <label>Cargo</label>
+          <input id="role" type="text" placeholder="Ex.: IT Analyst" />
+
+          <label>E-mail</label>
+          <input id="email" type="email" placeholder="nome.sobrenome@rstlogistics.com.br" />
+
+          <label>Deseja adicionar WhatsApp?</label>
+          <div class="row" role="radiogroup" aria-label="WhatsApp">
+            <div class="pill">
+              <input type="radio" id="waNo" name="wa" value="no" checked />
+              <label for="waNo" style="margin:0;color:var(--t);font-size:13px;">Não</label>
+            </div>
+            <div class="pill">
+              <input type="radio" id="waYes" name="wa" value="yes" />
+              <label for="waYes" style="margin:0;color:var(--t);font-size:13px;">Sim</label>
+            </div>
+          </div>
+
+          <div id="waBox" style="display:none; margin-top:8px;">
+            <label>WhatsApp (DDD + número)</label>
+            <input id="whatsapp" type="text" placeholder="Ex.: 47999999999" />
+            <div class="hint">O link será gerado como <b>https://wa.me/55DDDNÚMERO</b> e exibido como <b>+55 (DD) 99999-9999</b>.</div>
+          </div>
+
+          <label style="margin-top:14px;">Aviso (feriados) — opcional</label>
+          <textarea id="holidayNote" placeholder='Ex.: Atendimento reduzido em razão de feriado municipal.'></textarea>
+          <div class="hint">Se preenchido, aparecerá abaixo da assinatura em <b>vermelho</b>, <b>negrito</b> e entre <b>aspas duplas</b>.</div>
+
+          <div class="hint" style="margin-top:12px;">
+            Telefone fixo na assinatura: <b>+55 47 3170-0576</b> (padrão da empresa).
+          </div>
+
+          <div style="margin-top:14px;" class="row">
+            <button class="btn secondary" id="btnGenerate" type="button">Gerar assinatura</button>
+            <button class="btn" id="btnCopy" type="button" style="display:none;">Copiar assinaturas</button>
+          </div>
+
+          <div id="msgOk" class="ok">✅ Assinatura copiada</div>
+          <div id="msgErr" class="danger">Preencha pelo menos <b>Nome</b> e <b>E-mail</b>.</div>
+        </div>
+      </div>
+
+      <!-- ONLY PREVIEW -->
+      <div class="card">
+        <h2>Modelo (como ficará no Outlook)</h2>
+        <div class="content">
+          <div class="muted">Preencha os dados e clique em <b>Gerar assinatura</b>.</div>
+          <div id="preview" class="previewBox" style="margin-top:10px;">
+            <div class="muted">Nenhuma assinatura gerada ainda.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ====== CONFIG ======
+  const COMPANY_SUFFIX = " - RST Logistics";
+  const NAME_COLOR = "#679dc9";
+
+  const COMPANY_PHONE_DISPLAY = "+55 47 3170-0576";
+  const COMPANY_PHONE_TEL = "+554731700576";
+
+  const INSTAGRAM_URL = "https://www.instagram.com/rst.interlog";
+  const LINKEDIN_URL  = "https://www.linkedin.com/company/rstlogistics/";
+  const SITE_URL      = "https://www.rstlogistics.com.br/";
+
+  // ÍCONES / ASSINATURA (site)
+  const ICON_EMAIL     = "https://www.rstlogistics.com.br/icones/logo-mail.png";
+  const ICON_PHONE     = "https://www.rstlogistics.com.br/icones/logo-phone.png";
+  const ICON_WHATSAPP  = "https://www.rstlogistics.com.br/icones/logo-whatsapp.png";
+  const ICON_INSTAGRAM = "https://www.rstlogistics.com.br/icones/logo-instagram.png";
+  const ICON_LINKEDIN  = "https://www.rstlogistics.com.br/icones/logo-linkedin.png";
+  const SIGNATURE_IMG  = "https://www.rstlogistics.com.br/icones/logo-rst.png";
+
+  // ====== UI ======
+  const elName = document.getElementById("displayName");
+  const elRole = document.getElementById("role");
+  const elEmail = document.getElementById("email");
+  const waBox = document.getElementById("waBox");
+  const elWhatsapp = document.getElementById("whatsapp");
+  const elHoliday = document.getElementById("holidayNote");
+  const btnGenerate = document.getElementById("btnGenerate");
+  const btnCopy = document.getElementById("btnCopy");
+  const preview = document.getElementById("preview");
+  const msgOk = document.getElementById("msgOk");
+  const msgErr = document.getElementById("msgErr");
+
+  let lastGeneratedHtml = "";
+
+  function showOk(text) {
+    msgOk.textContent = text || "✅ Assinatura copiada";
+    msgOk.style.display = "block";
+    setTimeout(() => (msgOk.style.display = "none"), 1800);
+  }
+  function showErr(on) {
+    msgErr.style.display = on ? "block" : "none";
+  }
+
+  function stripSuffix(name) {
+    if (!name) return "";
+    return name.replace(/\s*-\s*RST\s*Logistics\s*$/i, "").trim();
+  }
+
+  function digitsOnly(v) {
+    return (v || "").toString().replace(/\D+/g, "");
+  }
+
+  function formatBrWhatsapp(raw) {
+    let d = digitsOnly(raw);
+    if (d.startsWith("55") && d.length > 11) d = d.slice(2);
+    if (d.length < 10) return { ok:false, display:"", link:"" };
+
+    const ddd = d.slice(0, 2);
+    const num = d.slice(2);
+
+    let displayNum = num;
+    if (num.length === 9) displayNum = num.slice(0, 5) + "-" + num.slice(5);
+    else if (num.length === 8) displayNum = num.slice(0, 4) + "-" + num.slice(4);
+
+    return {
+      ok:true,
+      display: `+55 ${ddd} ${displayNum}`,
+      link: "https://wa.me/55" + ddd + num
+    };
+  }
+
+  function escapeHtml(str) {
+    return (str ?? "").toString()
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function buildSignatureHTML({ name, role, email, wa, holidayNote }) {
+    const safeName = escapeHtml(name);
+    const safeRole = escapeHtml(role);
+    const safeEmail = escapeHtml(email);
+
+    const safeHoliday = (holidayNote || "").trim()
+      ? escapeHtml(holidayNote).replace(/\n/g, "<br/>")
+      : "";
+
+    const linkStyle = "color:#111827;text-decoration:none;";
+
+    // Coluna do ícone com largura travada (evita espaçamento gigante no Outlook)
+    const iconTd = 'width="22" style="width:22px;padding:2px 6px 2px 0;vertical-align:middle;"';
+    const textTd = 'width="100%" style="padding:2px 0;vertical-align:middle;"';
+
+    const iconImg = (src, alt) =>
+      `<img src="${src}" alt="${alt}" width="16" height="16" style="display:block;border:0;outline:none;text-decoration:none;" />`;
+
+    // Ícones sociais (um pouco maiores)
+    const socialImg = (src, alt) =>
+      `<img src="${src}" alt="${alt}" width="18" height="18" style="display:block;border:0;outline:none;text-decoration:none;" />`;
+
+    const roleRow = safeRole ? `
+      <tr>
+        <td colspan="2" style="padding:0 0 8px 0;font-size:10.5pt;color:#374151;">
+          ${safeRole}
+        </td>
+      </tr>
+    ` : "";
+
+    const waRow = wa?.ok ? `
+      <tr>
+        <td ${iconTd}>
+          ${iconImg(ICON_WHATSAPP, "WhatsApp")}
+        </td>
+        <td ${textTd}>
+          <a href="${wa.link}" style="${linkStyle}" target="_blank" rel="noreferrer noopener">${escapeHtml(wa.display)}</a>
+        </td>
+      </tr>
+    ` : "";
+
+    const holidayRow = safeHoliday ? `
+      <tr>
+        <td colspan="2" style="padding:10px 0 0 0;font-size:10.5pt;color:#b91c1c;font-weight:700;">
+          &quot;${safeHoliday}&quot;
+        </td>
+      </tr>
+    ` : "";
+
+    return `
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;color:#111827;">
+  <tr>
+    <td colspan="2" style="padding:0 0 2px 0;font-size:12pt;font-weight:700;color:${NAME_COLOR};">
+      ${safeName}${escapeHtml(COMPANY_SUFFIX)}
+    </td>
+  </tr>
+
+  ${roleRow}
+
+  <tr>
+    <td ${iconTd}>
+      ${iconImg(ICON_EMAIL, "E-mail")}
+    </td>
+    <td ${textTd}>
+      <a href="mailto:${safeEmail}" style="${linkStyle}">${safeEmail}</a>
+    </td>
+  </tr>
+
+  <tr>
+    <td ${iconTd}>
+      ${iconImg(ICON_PHONE, "Telefone")}
+    </td>
+    <td ${textTd}>
+      <a href="tel:${escapeHtml(COMPANY_PHONE_TEL)}" style="${linkStyle}">${escapeHtml(COMPANY_PHONE_DISPLAY)}</a>
+    </td>
+  </tr>
+
+  ${waRow}
+
+  <tr><td colspan="2" style="height:10px;line-height:10px;font-size:1px;">&nbsp;</td></tr>
+
+  <!-- Instagram / LinkedIn lado a lado (Outlook-safe)
+  <tr>
+    <td colspan="2" style="padding:0 0 10px 0;">
+      <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+        <tr>
+          <td style="padding:0;vertical-align:middle;">
+            <a href="${INSTAGRAM_URL}" target="_blank" rel="noreferrer noopener" style="text-decoration:none;">
+              ${socialImg(ICON_INSTAGRAM, "Instagram")}
+            </a>
+          </td>
+          <td style="width:10px;font-size:1px;line-height:1px;">&nbsp;</td>
+          <td style="padding:0;vertical-align:middle;">
+            <a href="${LINKEDIN_URL}" target="_blank" rel="noreferrer noopener" style="text-decoration:none;">
+              ${socialImg(ICON_LINKEDIN, "LinkedIn")}
+            </a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr> -->
+
+  <tr>
+    <td colspan="2" style="padding:0;">
+      <a href="${SITE_URL}" target="_blank" rel="noreferrer noopener" style="text-decoration:none;">
+        <img src="${SIGNATURE_IMG}" alt="RST Logistics" style="display:block;border:0;max-width:520px;height:auto;outline:none;text-decoration:none;" />
+      </a>
+    </td>
+  </tr>
+
+  ${holidayRow}
+</table>
+    `.trim();
+  }
+
+  function isWaEnabled() {
+    const checked = document.querySelector('input[name="wa"]:checked');
+    return checked && checked.value === "yes";
+  }
+
+  function updateWaVisibility() {
+    waBox.style.display = isWaEnabled() ? "block" : "none";
+  }
+
+  function generate() {
+    showErr(false);
+
+    const rawName = (elName.value || "").trim();
+    const rawEmail = (elEmail.value || "").trim();
+    const rawRole = (elRole.value || "").trim();
+    const rawHoliday = (elHoliday.value || "").trim();
+
+    if (!rawName || !rawEmail) {
+      lastGeneratedHtml = "";
+      preview.innerHTML = `<div class="muted">Nenhuma assinatura gerada ainda.</div>`;
+      btnCopy.style.display = "none";
+      showErr(true);
+      return;
+    }
+
+    const name = stripSuffix(rawName);
+    const email = rawEmail;
+    const role = rawRole;
+
+    let wa = null;
+    if (isWaEnabled()) {
+      const parsed = formatBrWhatsapp(elWhatsapp.value);
+      if (parsed.ok) wa = parsed;
+    }
+
+    const html = buildSignatureHTML({ name, role, email, wa, holidayNote: rawHoliday });
+    lastGeneratedHtml = html;
+
+    preview.innerHTML = html;
+    btnCopy.style.display = "inline-flex";
+  }
+
+  async function copySignature() {
+    if (!lastGeneratedHtml) return;
+
+    try {
+      if (navigator.clipboard && window.ClipboardItem) {
+        const blobHtml = new Blob([lastGeneratedHtml], { type: "text/html" });
+        const blobText = new Blob([lastGeneratedHtml], { type: "text/plain" });
+        await navigator.clipboard.write([new ClipboardItem({ "text/html": blobHtml, "text/plain": blobText })]);
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(lastGeneratedHtml);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = lastGeneratedHtml;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      showOk("✅ Assinatura copiada");
+    } catch (e) {
+      showOk("✅ Assinatura copiada");
+    }
+  }
+
+  // Eventos
+  document.querySelectorAll('input[name="wa"]').forEach(r => {
+    r.addEventListener("change", updateWaVisibility);
+    r.addEventListener("click", updateWaVisibility);
+  });
+
+  btnGenerate.addEventListener("click", generate);
+  btnCopy.addEventListener("click", copySignature);
+
+  updateWaVisibility();
+</script>
+</body>
+</html>
