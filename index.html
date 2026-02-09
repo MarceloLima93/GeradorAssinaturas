@@ -139,7 +139,6 @@
         <div class="content">
           <div class="muted">Preencha os dados e clique em <b>Gerar assinatura</b>.</div>
 
-          <!-- ✅ Ajuste: contenteditable + tabindex ajuda copiar/colar em iframe/Outlook -->
           <div id="preview"
                class="previewBox"
                style="margin-top:10px; user-select: all;"
@@ -178,6 +177,9 @@
   // Banner da assinatura (imagem-email)
   const SIGNATURE_IMG  = "https://www.rstlogistics.com.br/icones/imagem-email.png";
 
+  // ✅ Largura da assinatura (vai ser atualizada automaticamente pela largura da SIGNATURE_IMG)
+  let SIGNATURE_WIDTH = 520; // fallback caso a imagem não carregue a tempo
+
   // RAMAL POR DEPARTAMENTO
   const EXT_BY_DEPT = {
     "RH": "10",
@@ -211,6 +213,26 @@
 
   // seta o logo no topo do gerador
   elLogoTop.src = COMPANY_LOGO_TOP;
+
+  // ✅ garante a largura real da imagem (pra assinatura ficar exatamente igual ao banner)
+  let signatureWidthPromise = null;
+  function ensureSignatureWidth() {
+    if (signatureWidthPromise) return signatureWidthPromise;
+
+    signatureWidthPromise = new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        if (img.naturalWidth && img.naturalWidth > 0) {
+          SIGNATURE_WIDTH = img.naturalWidth;
+        }
+        resolve();
+      };
+      img.onerror = () => resolve();
+      img.src = SIGNATURE_IMG;
+    });
+
+    return signatureWidthPromise;
+  }
 
   function showOk(text) {
     msgOk.textContent = text || "✅ Assinatura copiada";
@@ -340,7 +362,8 @@
     }
 
     return `
-<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;color:#111827;">
+<table cellpadding="0" cellspacing="0" border="0" width="${SIGNATURE_WIDTH}"
+  style="width:${SIGNATURE_WIDTH}px;max-width:${SIGNATURE_WIDTH}px;table-layout:fixed;border-collapse:collapse;font-family:Calibri,Arial,sans-serif;color:#111827;">
   <tr>
     <td colspan="2" style="padding:0 0 2px 0;font-size:12pt;font-weight:700;color:${NAME_COLOR};">
       ${safeName}${escapeHtml(COMPANY_SUFFIX)}
@@ -371,31 +394,11 @@
 
   <tr><td colspan="2" style="height:10px;line-height:10px;font-size:1px;">&nbsp;</td></tr>
 
-  <!-- Instagram / LinkedIn lado a lado (Outlook-safe)
-  <tr>
-    <td colspan="2" style="padding:0 0 10px 0;">
-      <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
-        <tr>
-          <td style="padding:0;vertical-align:middle;">
-            <a href="${INSTAGRAM_URL}" target="_blank" rel="noreferrer noopener" style="text-decoration:none;">
-              ${iconImg(ICON_INSTAGRAM, "Instagram", 18, 18)}
-            </a>
-          </td>
-          <td style="width:10px;font-size:1px;line-height:1px;">&nbsp;</td>
-          <td style="padding:0;vertical-align:middle;">
-            <a href="${LINKEDIN_URL}" target="_blank" rel="noreferrer noopener" style="text-decoration:none;">
-              ${iconImg(ICON_LINKEDIN, "LinkedIn", 18, 18)}
-            </a>
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr> -->
-
   <tr>
     <td colspan="2" style="padding:0;">
       <a href="${SITE_URL}" target="_blank" rel="noreferrer noopener" style="text-decoration:none;">
-        <img src="${SIGNATURE_IMG}" alt="RST Logistics" style="display:block;border:0;max-width:520px;height:auto;outline:none;text-decoration:none;" />
+        <img src="${SIGNATURE_IMG}" alt="RST Logistics" width="${SIGNATURE_WIDTH}"
+          style="display:block;border:0;outline:none;text-decoration:none;width:${SIGNATURE_WIDTH}px;height:auto;" />
       </a>
     </td>
   </tr>
@@ -405,8 +408,11 @@
     `.trim();
   }
 
-  function generate() {
+  async function generate() {
     showErr(false);
+
+    // ✅ garante que SIGNATURE_WIDTH esteja com a largura real da imagem
+    await ensureSignatureWidth();
 
     const rawName = (elName.value || "").trim();
     const rawEmail = (elEmail.value || "").trim();
@@ -455,10 +461,8 @@
     if (!lastGeneratedHtml) return;
     showErr(false);
 
-    // garante foco no preview (ajuda no execCommand)
     preview.focus();
 
-    // seleciona conteúdo do preview (HTML)
     const range = document.createRange();
     range.selectNodeContents(preview);
 
