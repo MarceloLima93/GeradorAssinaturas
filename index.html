@@ -59,7 +59,7 @@
           <label>Cargo</label>
           <input id="role" type="text" placeholder="Ex.: IT Analyst" />
 
-          <!-- ✅ NOVO: RAMAL -->
+          <!-- RAMAL -->
           <label>Deseja adicionar Ramal?</label>
           <div class="row" role="radiogroup" aria-label="Ramal">
             <div class="pill">
@@ -138,7 +138,14 @@
         <h2>Modelo (como ficará no Outlook)</h2>
         <div class="content">
           <div class="muted">Preencha os dados e clique em <b>Gerar assinatura</b>.</div>
-          <div id="preview" class="previewBox" style="margin-top:10px;">
+
+          <!-- ✅ Ajuste: contenteditable + tabindex ajuda copiar/colar em iframe/Outlook -->
+          <div id="preview"
+               class="previewBox"
+               style="margin-top:10px; user-select: all;"
+               contenteditable="true"
+               tabindex="0"
+               spellcheck="false">
             <div class="muted">Nenhuma assinatura gerada ainda.</div>
           </div>
         </div>
@@ -171,7 +178,7 @@
   // Banner da assinatura (imagem-email)
   const SIGNATURE_IMG  = "https://www.rstlogistics.com.br/icones/imagem-email.png";
 
-  // ✅ RAMAL POR DEPARTAMENTO
+  // RAMAL POR DEPARTAMENTO
   const EXT_BY_DEPT = {
     "RH": "10",
     "FINANCEIRO": "11",
@@ -186,7 +193,6 @@
   const elName = document.getElementById("displayName");
   const elRole = document.getElementById("role");
 
-  // ✅ NOVO: ramal UI
   const extBox = document.getElementById("extBox");
   const elExtDept = document.getElementById("extDept");
 
@@ -211,7 +217,8 @@
     msgOk.style.display = "block";
     setTimeout(() => (msgOk.style.display = "none"), 1800);
   }
-  function showErr(on) {
+  function showErr(on, htmlMsg) {
+    if (htmlMsg) msgErr.innerHTML = htmlMsg;
     msgErr.style.display = on ? "block" : "none";
   }
 
@@ -233,7 +240,6 @@
     const ddd = d.slice(0, 2);
     const num = d.slice(2);
 
-    // sempre "prefixo - últimos 4" (8=4-4, 9=5-4, 10=6-4, etc.)
     const prefix = num.slice(0, Math.max(0, num.length - 4));
     const suffix = num.slice(-4);
     const displayNum = prefix ? (prefix + "-" + suffix) : suffix;
@@ -260,7 +266,7 @@
     return escapeHtml(t).replace(/\n/g, "<br/>");
   }
 
-  // ✅ RAMAL: enabled?
+  // RAMAL: enabled?
   function isExtEnabled() {
     const checked = document.querySelector('input[name="ext"]:checked');
     return checked && checked.value === "yes";
@@ -274,7 +280,6 @@
     const checked = document.querySelector('input[name="wa"]:checked');
     return checked && checked.value === "yes";
   }
-
   function updateWaVisibility() {
     waBox.style.display = isWaEnabled() ? "block" : "none";
   }
@@ -289,7 +294,6 @@
 
     const linkStyle = "color:#111827;text-decoration:none;";
 
-    // Outlook-safe: largura travada na coluna do ícone
     const iconTd = 'width="22" style="width:22px;padding:2px 6px 2px 0;vertical-align:middle;"';
     const textTd = 'width="100%" style="padding:2px 0;vertical-align:middle;"';
 
@@ -315,14 +319,12 @@
       </tr>
     ` : "";
 
-    // ✅ Ramal ao lado do telefone fixo
     const extInline = extNumber ? `
       <span style="color:#111827;">
         &nbsp;(<span style="color:${NAME_COLOR};">Ramal</span>: ${escapeHtml(extNumber)})
       </span>
     ` : "";
 
-    // Aviso PT + EN (se tiver)
     let holidayRow = "";
     if (pt || en) {
       const lines = [];
@@ -416,7 +418,7 @@
       lastGeneratedHtml = "";
       preview.innerHTML = `<div class="muted">Nenhuma assinatura gerada ainda.</div>`;
       btnCopy.style.display = "none";
-      showErr(true);
+      showErr(true, 'Preencha pelo menos <b>Nome</b> e <b>E-mail</b>.');
       return;
     }
 
@@ -430,7 +432,6 @@
       if (parsed.ok) wa = parsed;
     }
 
-    // ✅ RAMAL: pega o número via depto
     let extNumber = "";
     if (isExtEnabled()) {
       const dept = (elExtDept.value || "").trim();
@@ -449,28 +450,34 @@
     btnCopy.style.display = "inline-flex";
   }
 
-  async function copySignature() {
+  // ✅ Copiar que funciona dentro do SharePoint (iframe): seleção + execCommand
+  function copySignature() {
     if (!lastGeneratedHtml) return;
+    showErr(false);
+
+    // garante foco no preview (ajuda no execCommand)
+    preview.focus();
+
+    // seleciona conteúdo do preview (HTML)
+    const range = document.createRange();
+    range.selectNodeContents(preview);
+
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
 
     try {
-      if (navigator.clipboard && window.ClipboardItem) {
-        const blobHtml = new Blob([lastGeneratedHtml], { type: "text/html" });
-        const blobText = new Blob([lastGeneratedHtml], { type: "text/plain" });
-        await navigator.clipboard.write([new ClipboardItem({ "text/html": blobHtml, "text/plain": blobText })]);
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(lastGeneratedHtml);
+      const ok = document.execCommand("copy");
+      if (ok) {
+        showOk("✅ Assinatura copiada");
       } else {
-        const ta = document.createElement("textarea");
-        ta.value = lastGeneratedHtml;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
+        showErr(true, '❌ Não foi possível copiar automaticamente.<br/>Selecione a assinatura e use <b>Ctrl+C</b>.');
       }
-      showOk("✅ Assinatura copiada");
     } catch (e) {
-      showOk("✅ Assinatura copiada");
+      showErr(true, '❌ Bloqueado pelo navegador no SharePoint.<br/>Selecione a assinatura e use <b>Ctrl+C</b>.');
     }
+
+    selection.removeAllRanges();
   }
 
   // Eventos
@@ -479,7 +486,6 @@
     r.addEventListener("click", updateWaVisibility);
   });
 
-  // ✅ Eventos do ramal
   document.querySelectorAll('input[name="ext"]').forEach(r => {
     r.addEventListener("change", updateExtVisibility);
     r.addEventListener("click", updateExtVisibility);
