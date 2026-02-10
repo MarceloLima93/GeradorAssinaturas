@@ -149,6 +149,15 @@
         </div>
       </div>
     </div>
+
+    <!-- Se suas instruções já existem, só adicione id="instrucoes" no container delas -->
+    <!-- Exemplo:
+    <div id="instrucoes" style="margin-top:20px;">
+      <h2>Adicionando assinatura no Outlook</h2>
+      ...
+    </div>
+    -->
+
   </div>
 
 <script>
@@ -163,19 +172,26 @@
   const LINKEDIN_URL  = "https://www.linkedin.com/company/rstlogistics/";
   const SITE_URL      = "https://www.rstlogistics.com.br/";
 
+  // LOGO (SÓ NO GERADOR / UI)
   const COMPANY_LOGO_TOP = "https://www.rstlogistics.com.br/icones/logo-rst.png";
 
+  // ÍCONES (site)
   const ICON_EMAIL     = "https://www.rstlogistics.com.br/icones/logo-mail.png";
   const ICON_PHONE     = "https://www.rstlogistics.com.br/icones/logo-phone.png";
   const ICON_WHATSAPP  = "https://www.rstlogistics.com.br/icones/logo-whatsapp.png";
   const ICON_INSTAGRAM = "https://www.rstlogistics.com.br/icones/logo-instagram.png";
   const ICON_LINKEDIN  = "https://www.rstlogistics.com.br/icones/logo-linkedin.png";
 
+  // Banner da assinatura
   const SIGNATURE_IMG  = "https://www.rstlogistics.com.br/icones/imagem-email.png";
 
-  // ✅ largura fixa da assinatura (mesma largura do banner)
-  const SIGNATURE_WIDTH = 520;
+  // Outlook Classic: travar largura igual ao banner
+  const SIGNATURE_WIDTH = 520; // mesma largura da imagem-email
+  const ICON_W = 16;
+  const ICON_PAD_RIGHT = 4;
+  const TEXT_W = SIGNATURE_WIDTH - (ICON_W + ICON_PAD_RIGHT);
 
+  // RAMAL POR DEPARTAMENTO
   const EXT_BY_DEPT = {
     "RH": "10",
     "FINANCEIRO": "11",
@@ -278,6 +294,7 @@
     waBox.style.display = isWaEnabled() ? "block" : "none";
   }
 
+  // ✅ Ajuste principal (Outlook Classic): largura fixa + sem width 100% no texto
   function buildSignatureHTML({ name, role, email, wa, holidayPt, holidayEn, extNumber }) {
     const safeName = escapeHtml(name);
     const safeRole = escapeHtml(role);
@@ -288,16 +305,29 @@
 
     const linkStyle = "color:#111827;text-decoration:none;";
 
-    // ✅ sem width=100% pra não “empurrar” o texto
-    const iconTd = 'width="22" style="width:22px;padding:2px 7px 2px 0;vertical-align:middle;"';
-    const textTd = 'style="padding:2px 0;vertical-align:middle;text-align:left;"';
+    const tableStyle =
+      `border-collapse:collapse;` +
+      `mso-table-lspace:0pt;mso-table-rspace:0pt;` +
+      `width:${SIGNATURE_WIDTH}px;max-width:${SIGNATURE_WIDTH}px;` +
+      `font-family:Calibri,Arial,sans-serif;color:#111827;`;
+
+    const iconTd =
+      `width="${ICON_W}" valign="middle" ` +
+      `style="width:${ICON_W}px;padding:0 ${ICON_PAD_RIGHT}px 0 0;vertical-align:middle;` +
+      `font-size:0;line-height:0;mso-line-height-rule:exactly;"`;
+
+    const textTd =
+      `width="${TEXT_W}" valign="middle" ` +
+      `style="width:${TEXT_W}px;padding:0;vertical-align:middle;text-align:left;` +
+      `font-size:11pt;line-height:16px;mso-line-height-rule:exactly;"`;
 
     const iconImg = (src, alt, w=16, h=16) =>
-      `<img src="${src}" alt="${alt}" width="${w}" height="${h}" style="display:block;border:0;outline:none;text-decoration:none;" />`;
+      `<img src="${src}" alt="${alt}" width="${w}" height="${h}" ` +
+      `style="display:inline-block;vertical-align:middle;border:0;outline:none;text-decoration:none;" />`;
 
     const roleRow = safeRole ? `
       <tr>
-        <td colspan="2" style="padding:0 0 8px 0;font-size:10.5pt;color:#374151;">
+        <td colspan="2" style="padding:0 0 8px 0;font-size:10.5pt;line-height:14px;mso-line-height-rule:exactly;color:#374151;">
           ${safeRole}
         </td>
       </tr>
@@ -305,9 +335,7 @@
 
     const waRow = wa?.ok ? `
       <tr>
-        <td ${iconTd}>
-          ${iconImg(ICON_WHATSAPP, "WhatsApp")}
-        </td>
+        <td ${iconTd}>${iconImg(ICON_WHATSAPP, "WhatsApp")}</td>
         <td ${textTd}>
           <a href="${wa.link}" style="${linkStyle}" target="_blank" rel="noreferrer noopener">${escapeHtml(wa.display)}</a>
         </td>
@@ -327,7 +355,7 @@
       if (en) lines.push(`&quot;${en}&quot;`);
       holidayRow = `
         <tr>
-          <td colspan="2" style="padding:10px 0 0 0;font-size:10.5pt;color:#b91c1c;font-weight:700;">
+          <td colspan="2" style="padding:10px 0 0 0;font-size:10.5pt;line-height:14px;mso-line-height-rule:exactly;color:#b91c1c;font-weight:700;">
             ${lines.join("<br/>")}
           </td>
         </tr>
@@ -335,11 +363,9 @@
     }
 
     return `
-<table cellpadding="0" cellspacing="0" border="0"
-       width="${SIGNATURE_WIDTH}"
-       style="width:${SIGNATURE_WIDTH}px;border-collapse:collapse;font-family:Calibri,Arial,sans-serif;color:#111827;">
+<table cellpadding="0" cellspacing="0" border="0" width="${SIGNATURE_WIDTH}" style="${tableStyle}">
   <tr>
-    <td colspan="2" style="padding:0 0 2px 0;font-size:12pt;font-weight:700;color:${NAME_COLOR};">
+    <td colspan="2" style="padding:0 0 2px 0;font-size:12pt;line-height:16px;mso-line-height-rule:exactly;font-weight:700;color:${NAME_COLOR};">
       ${safeName}${escapeHtml(COMPANY_SUFFIX)}
     </td>
   </tr>
@@ -347,18 +373,14 @@
   ${roleRow}
 
   <tr>
-    <td ${iconTd}>
-      ${iconImg(ICON_EMAIL, "E-mail")}
-    </td>
+    <td ${iconTd}>${iconImg(ICON_EMAIL, "E-mail")}</td>
     <td ${textTd}>
-      <a href="mailto:${safeEmail}" style="${linkStyle}; white-space:nowrap;">${safeEmail}</a>
+      <a href="mailto:${safeEmail}" style="${linkStyle}">${safeEmail}</a>
     </td>
   </tr>
 
   <tr>
-    <td ${iconTd}>
-      ${iconImg(ICON_PHONE, "Telefone")}
-    </td>
+    <td ${iconTd}>${iconImg(ICON_PHONE, "Telefone")}</td>
     <td ${textTd}>
       <a href="tel:${escapeHtml(COMPANY_PHONE_TEL)}" style="${linkStyle}">${escapeHtml(COMPANY_PHONE_DISPLAY)}</a>${extInline}
     </td>
@@ -370,10 +392,8 @@
 
   <tr>
     <td colspan="2" style="padding:0;">
-      <a href="${SITE_URL}" target="_blank" rel="noreferrer noopener" style="text-decoration:none;display:block;">
-        <!-- ✅ width no atributo + width no style (Outlook-safe) -->
-        <img src="${SIGNATURE_IMG}" alt="RST Logistics"
-             width="${SIGNATURE_WIDTH}"
+      <a href="${SITE_URL}" target="_blank" rel="noreferrer noopener" style="text-decoration:none;">
+        <img src="${SIGNATURE_IMG}" alt="RST Logistics" width="${SIGNATURE_WIDTH}"
              style="display:block;border:0;width:${SIGNATURE_WIDTH}px;max-width:${SIGNATURE_WIDTH}px;height:auto;outline:none;text-decoration:none;" />
       </a>
     </td>
@@ -429,7 +449,13 @@
     btnCopy.style.display = "inline-flex";
   }
 
-  // Copiar (SharePoint-safe)
+  function scrollToInstructionsIfExists() {
+    const el = document.getElementById("instrucoes");
+    if (!el) return;
+    setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+  }
+
+  // Copiar compatível com SharePoint (iframe): seleção + execCommand
   function copySignature() {
     if (!lastGeneratedHtml) return;
     showErr(false);
@@ -447,11 +473,14 @@
       const ok = document.execCommand("copy");
       if (ok) {
         showOk("✅ Assinatura copiada");
+        scrollToInstructionsIfExists();
       } else {
         showErr(true, '❌ Não foi possível copiar automaticamente.<br/>Selecione a assinatura e use <b>Ctrl+C</b>.');
+        scrollToInstructionsIfExists();
       }
     } catch (e) {
       showErr(true, '❌ Bloqueado pelo navegador no SharePoint.<br/>Selecione a assinatura e use <b>Ctrl+C</b>.');
+      scrollToInstructionsIfExists();
     }
 
     selection.removeAllRanges();
