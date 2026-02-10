@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -46,7 +45,6 @@
     <div class="grid">
       <!-- FORM -->
       <div class="card">
-        <!-- LOGO NO TOPO DO GERADOR (UI) -->
         <div class="brandTop">
           <img id="companyLogoTop" alt="RST Logistics" />
         </div>
@@ -140,7 +138,6 @@
         <div class="content">
           <div class="muted">Preencha os dados e clique em <b>Gerar assinatura</b>.</div>
 
-          <!-- ✅ Ajuste: contenteditable + tabindex ajuda copiar/colar em iframe/Outlook -->
           <div id="preview"
                class="previewBox"
                style="margin-top:10px; user-select: all;"
@@ -166,20 +163,19 @@
   const LINKEDIN_URL  = "https://www.linkedin.com/company/rstlogistics/";
   const SITE_URL      = "https://www.rstlogistics.com.br/";
 
-  // LOGO (SÓ NO GERADOR / UI)
   const COMPANY_LOGO_TOP = "https://www.rstlogistics.com.br/icones/logo-rst.png";
 
-  // ÍCONES (site)
   const ICON_EMAIL     = "https://www.rstlogistics.com.br/icones/logo-mail.png";
   const ICON_PHONE     = "https://www.rstlogistics.com.br/icones/logo-phone.png";
   const ICON_WHATSAPP  = "https://www.rstlogistics.com.br/icones/logo-whatsapp.png";
   const ICON_INSTAGRAM = "https://www.rstlogistics.com.br/icones/logo-instagram.png";
   const ICON_LINKEDIN  = "https://www.rstlogistics.com.br/icones/logo-linkedin.png";
 
-  // Banner da assinatura (imagem-email)
   const SIGNATURE_IMG  = "https://www.rstlogistics.com.br/icones/imagem-email.png";
 
-  // RAMAL POR DEPARTAMENTO
+  // ✅ largura fixa da assinatura (mesma largura do banner)
+  const SIGNATURE_WIDTH = 520;
+
   const EXT_BY_DEPT = {
     "RH": "10",
     "FINANCEIRO": "11",
@@ -210,7 +206,6 @@
 
   let lastGeneratedHtml = "";
 
-  // seta o logo no topo do gerador
   elLogoTop.src = COMPANY_LOGO_TOP;
 
   function showOk(text) {
@@ -232,7 +227,6 @@
     return (v || "").toString().replace(/\D+/g, "");
   }
 
-  // Exibição pedida: +55 47 999280-0687
   function formatBrWhatsapp(raw) {
     let d = digitsOnly(raw);
     if (d.startsWith("55") && d.length > 11) d = d.slice(2);
@@ -267,7 +261,6 @@
     return escapeHtml(t).replace(/\n/g, "<br/>");
   }
 
-  // RAMAL: enabled?
   function isExtEnabled() {
     const checked = document.querySelector('input[name="ext"]:checked');
     return checked && checked.value === "yes";
@@ -295,8 +288,9 @@
 
     const linkStyle = "color:#111827;text-decoration:none;";
 
-    const iconTd = 'width="22" style="width:22px;padding:2px 6px 2px 0;vertical-align:middle;"';
-    const textTd = 'width="100%" style="padding:2px 0;vertical-align:middle;"';
+    // ✅ sem width=100% pra não “empurrar” o texto
+    const iconTd = 'width="22" style="width:22px;padding:2px 7px 2px 0;vertical-align:middle;"';
+    const textTd = 'style="padding:2px 0;vertical-align:middle;text-align:left;"';
 
     const iconImg = (src, alt, w=16, h=16) =>
       `<img src="${src}" alt="${alt}" width="${w}" height="${h}" style="display:block;border:0;outline:none;text-decoration:none;" />`;
@@ -341,7 +335,9 @@
     }
 
     return `
-<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;color:#111827;">
+<table cellpadding="0" cellspacing="0" border="0"
+       width="${SIGNATURE_WIDTH}"
+       style="width:${SIGNATURE_WIDTH}px;border-collapse:collapse;font-family:Calibri,Arial,sans-serif;color:#111827;">
   <tr>
     <td colspan="2" style="padding:0 0 2px 0;font-size:12pt;font-weight:700;color:${NAME_COLOR};">
       ${safeName}${escapeHtml(COMPANY_SUFFIX)}
@@ -355,7 +351,7 @@
       ${iconImg(ICON_EMAIL, "E-mail")}
     </td>
     <td ${textTd}>
-      <a href="mailto:${safeEmail}" style="${linkStyle}">${safeEmail}</a>
+      <a href="mailto:${safeEmail}" style="${linkStyle}; white-space:nowrap;">${safeEmail}</a>
     </td>
   </tr>
 
@@ -372,31 +368,13 @@
 
   <tr><td colspan="2" style="height:10px;line-height:10px;font-size:1px;">&nbsp;</td></tr>
 
-  <!-- Instagram / LinkedIn lado a lado (Outlook-safe)
-  <tr>
-    <td colspan="2" style="padding:0 0 10px 0;">
-      <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
-        <tr>
-          <td style="padding:0;vertical-align:middle;">
-            <a href="${INSTAGRAM_URL}" target="_blank" rel="noreferrer noopener" style="text-decoration:none;">
-              ${iconImg(ICON_INSTAGRAM, "Instagram", 18, 18)}
-            </a>
-          </td>
-          <td style="width:10px;font-size:1px;line-height:1px;">&nbsp;</td>
-          <td style="padding:0;vertical-align:middle;">
-            <a href="${LINKEDIN_URL}" target="_blank" rel="noreferrer noopener" style="text-decoration:none;">
-              ${iconImg(ICON_LINKEDIN, "LinkedIn", 18, 18)}
-            </a>
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr> -->
-
   <tr>
     <td colspan="2" style="padding:0;">
-      <a href="${SITE_URL}" target="_blank" rel="noreferrer noopener" style="text-decoration:none;">
-        <img src="${SIGNATURE_IMG}" alt="RST Logistics" style="display:block;border:0;max-width:520px;height:auto;outline:none;text-decoration:none;" />
+      <a href="${SITE_URL}" target="_blank" rel="noreferrer noopener" style="text-decoration:none;display:block;">
+        <!-- ✅ width no atributo + width no style (Outlook-safe) -->
+        <img src="${SIGNATURE_IMG}" alt="RST Logistics"
+             width="${SIGNATURE_WIDTH}"
+             style="display:block;border:0;width:${SIGNATURE_WIDTH}px;max-width:${SIGNATURE_WIDTH}px;height:auto;outline:none;text-decoration:none;" />
       </a>
     </td>
   </tr>
@@ -451,15 +429,13 @@
     btnCopy.style.display = "inline-flex";
   }
 
-  // ✅ Copiar que funciona dentro do SharePoint (iframe): seleção + execCommand
+  // Copiar (SharePoint-safe)
   function copySignature() {
     if (!lastGeneratedHtml) return;
     showErr(false);
 
-    // garante foco no preview (ajuda no execCommand)
     preview.focus();
 
-    // seleciona conteúdo do preview (HTML)
     const range = document.createRange();
     range.selectNodeContents(preview);
 
@@ -481,7 +457,6 @@
     selection.removeAllRanges();
   }
 
-  // Eventos
   document.querySelectorAll('input[name="wa"]').forEach(r => {
     r.addEventListener("change", updateWaVisibility);
     r.addEventListener("click", updateWaVisibility);
