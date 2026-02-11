@@ -21,6 +21,14 @@
       border-radius:10px; outline:none; font-family:inherit; background:#fff;
     }
     textarea{min-height:72px; resize:vertical;}
+
+    .codeBox{
+      min-height:160px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:12px;
+      line-height:1.35;
+      white-space:pre;
+    }
     input:focus, textarea:focus, select:focus{border-color:#93c5fd; box-shadow:0 0 0 3px rgba(59,130,246,.15);}
     .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
     .row .pill{display:flex;gap:10px;align-items:center;border:1px solid var(--b);padding:10px 12px;border-radius:12px;}
@@ -31,13 +39,38 @@
     }
     .btn.secondary{background:#fff;color:#111827;}
     .hint{font-size:12px;color:var(--m);margin-top:8px;line-height:1.35;}
-    .ok{font-size:12px;color:#065f46;background:#ecfdf5;border:1px solid #a7f3d0;padding:10px 12px;border-radius:12px;display:none;margin-top:10px;}
+    .ok{font-size:12px;color:#065f46;background:#ecfdf5;border:1px solid #a7f3d0;padding:10px 12px;border-radius:12px;display:none;position:fixed;right:16px;bottom:16px;z-index:9999;max-width:360px;box-shadow:0 10px 25px rgba(0,0,0,.12);}
     .danger{color:#991b1b; background:#fef2f2; border:1px solid #fecaca; padding:10px 12px; border-radius:12px; display:none; margin-top:10px;}
     .previewBox{
       border:1px dashed var(--b); border-radius:12px; background:#fff; padding:14px; overflow:auto;
       min-height:220px;
     }
     .muted{color:var(--m); font-size:12px; margin:6px 0 0;}
+  
+    @media (max-width: 520px){.ok{left:16px;right:16px;max-width:none;}}
+  
+    /* ===== POPUP CENTRAL (MODAL) ===== */
+    .popupBackdrop{
+      position:fixed; inset:0;
+      background:rgba(17,24,39,.45);
+      display:none;
+      align-items:center; justify-content:center;
+      z-index:10000;
+      padding:16px;
+    }
+    .popupCard{
+      background:#fff;
+      border:1px solid var(--b);
+      border-radius:16px;
+      box-shadow:0 20px 45px rgba(0,0,0,.25);
+      max-width:420px;
+      width:100%;
+      padding:18px;
+    }
+    .popupTitle{font-size:14px;font-weight:700;color:var(--t);margin:0 0 8px;}
+    .popupText{font-size:14px;line-height:1.35;color:var(--t);}
+    .popupActions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;}
+
   </style>
 </head>
 <body>
@@ -108,23 +141,17 @@
             </div>
           </div>
 
-          <label style="margin-top:14px;">Aviso (feriados) — Português (opcional)</label>
+          <label style="margin-top:14px;">Aviso (Ficará abaixo da sua assinatura) — Português (opcional)</label>
           <textarea id="holidayPt" placeholder='Ex.: Atendimento reduzido em razão de feriado municipal.'></textarea>
 
-          <label>Aviso (feriados) — English (optional)</label>
+          <label>Aviso (Ficará abaixo da sua assinatura) — English (optional)</label>
           <textarea id="holidayEn" placeholder='E.g.: Reduced service due to local holiday.'></textarea>
 
           <div class="hint">
             Se preenchido, aparecerá abaixo da assinatura em <b>vermelho</b>, <b>negrito</b> e entre <b>aspas duplas</b>, com PT e EN em sequência.
           </div>
-
-          <div class="hint" style="margin-top:12px;">
-            Telefone fixo na assinatura: <b>+55 47 3170-0576</b> (padrão da empresa).
-          </div>
-
-          <div style="margin-top:14px;" class="row">
+           <div style="margin-top:14px;" class="row">
             <button class="btn secondary" id="btnGenerate" type="button">Gerar assinatura</button>
-            <button class="btn" id="btnCopy" type="button" style="display:none;">Copiar assinaturas</button>
           </div>
 
           <div id="msgOk" class="ok">✅ Assinatura copiada</div>
@@ -134,7 +161,7 @@
 
       <!-- PREVIEW -->
       <div class="card">
-        <h2>Modelo (como ficará no Outlook)</h2>
+        <h2>Modelo (Para Outlook)</h2>
         <div class="content">
           <div class="muted">Preencha os dados e clique em <b>Gerar assinatura</b>.</div>
 
@@ -146,6 +173,26 @@
                spellcheck="false">
             <div class="muted">Nenhuma assinatura gerada ainda.</div>
           </div>
+
+          <div class="row" style="margin-top:10px;">
+            <button class="btn secondary" id="btnCopy" type="button" style="display:none;">Copiar assinatura</button>
+          </div>
+
+          <div style="margin-top:14px;">
+            <div class="muted"><b>Formato para HeadCargo</b></div>
+
+            <textarea id="systemHtml"
+                      class="codeBox"
+                      readonly
+                      spellcheck="false"
+                      placeholder="Clique em &quot;Gerar assinatura&quot; para preencher este campo."
+                      style="margin-top:10px;"></textarea>
+
+            <div class="row" style="margin-top:10px;">
+              <button class="btn secondary" id="btnCopySystem" type="button" style="display:none;">Copiar formato do sistema</button>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -159,6 +206,19 @@
     -->
 
   </div>
+
+
+  <!-- POPUP CENTRAL -->
+  <div id="popup" class="popupBackdrop" role="dialog" aria-modal="true" aria-labelledby="popupTitle" style="display:none;">
+    <div class="popupCard">
+      <p class="popupTitle" id="popupTitle">Aviso</p>
+      <div class="popupText" id="popupText">...</div>
+      <div class="popupActions">
+        <button class="btn secondary" id="popupOk" type="button">OK</button>
+      </div>
+    </div>
+  </div>
+
 
 <script>
   // ====== CONFIG ======
@@ -217,22 +277,62 @@
   const btnGenerate = document.getElementById("btnGenerate");
   const btnCopy = document.getElementById("btnCopy");
   const preview = document.getElementById("preview");
+  const systemHtml = document.getElementById("systemHtml");
+  const btnCopySystem = document.getElementById("btnCopySystem");
   const msgOk = document.getElementById("msgOk");
   const msgErr = document.getElementById("msgErr");
 
+  // Popup central (modal)
+  const popup = document.getElementById("popup");
+  const popupText = document.getElementById("popupText");
+  const popupTitle = document.getElementById("popupTitle");
+  const popupOk = document.getElementById("popupOk");
+
+
   let lastGeneratedHtml = "";
+  let lastGeneratedSystemHtml = "";
 
   elLogoTop.src = COMPANY_LOGO_TOP;
 
   function showOk(text) {
-    msgOk.textContent = text || "✅ Assinatura copiada";
-    msgOk.style.display = "block";
-    setTimeout(() => (msgOk.style.display = "none"), 1800);
+    // Mantém as chamadas existentes (ex.: showOk("Assinatura gerada")),
+    // mas agora abre um popup central com botão OK.
+    openPopup(text || "Assinatura copiada");
   }
   function showErr(on, htmlMsg) {
     if (htmlMsg) msgErr.innerHTML = htmlMsg;
     msgErr.style.display = on ? "block" : "none";
   }
+
+  function openPopup(message, title) {
+    if (!popup) return;
+    if (popupTitle) popupTitle.textContent = title || "Aviso";
+    if (popupText) popupText.textContent = message || "";
+    popup.style.display = "flex";
+    // Foco no botão OK (melhora UX e acessibilidade)
+    setTimeout(() => {
+      try { popupOk && popupOk.focus(); } catch(e) {}
+    }, 0);
+  }
+
+  function closePopup() {
+    if (!popup) return;
+    popup.style.display = "none";
+  }
+
+  // Fechar no OK
+  if (popupOk) popupOk.addEventListener("click", closePopup);
+
+  // Fechar clicando fora (no fundo escuro)
+  if (popup) popup.addEventListener("click", (e) => {
+    if (e.target === popup) closePopup();
+  });
+
+  // Fechar com ESC
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && popup && popup.style.display === "flex") closePopup();
+  });
+
 
   function stripSuffix(name) {
     if (!name) return "";
@@ -404,6 +504,63 @@
     `.trim();
   }
 
+
+  // ====== FORMATO "SISTEMA" (sem tabela, só p/span/br/img) ======
+  function buildSystemSignatureHTML({ name, role, email, wa, holidayPt, holidayEn, extNumber }) {
+    const safeName = escapeHtml(name);
+    const safeRole = escapeHtml(role);
+    const safeEmail = escapeHtml(email);
+
+    const pt = nl2brEscaped(holidayPt);
+    const en = nl2brEscaped(holidayEn);
+
+    const pBase = "margin: 0px; font-family: Calibri; font-size: 12pt;";
+    const nameStyle = `margin: 0px; color: ${NAME_COLOR}; font-weight: bold; font-family: Calibri; font-size: 12pt;`;
+    const textStyle  = "font-family: Calibri; font-size: 12pt;";
+    const holidayStyle = "margin: 0px; color: #b91c1c; font-weight: bold; font-family: Calibri; font-size: 12pt;";
+
+    // ícones inline (mesmos do modelo)
+    const iconStyle = `width:${ICON_W}px;height:${ICON_W}px;vertical-align:middle;border:0;outline:none;text-decoration:none;`;
+    const icon = (src, alt) => `<img src="${src}" alt="${alt}" style="${iconStyle}" />`;
+
+    const extTxt = extNumber ? ` (<span style='color:${NAME_COLOR};'>Ramal</span>: ${escapeHtml(extNumber)})` : "";
+
+    const parts = [];
+    parts.push(`<p style='${nameStyle}'>${safeName}${escapeHtml(COMPANY_SUFFIX)}</p>`);
+    if (safeRole) parts.push(`<p style='${pBase}'>${safeRole}</p>`);
+    parts.push("<br>");
+
+    // E-mail
+    if (safeEmail) {
+      parts.push(`<span>${icon(ICON_EMAIL, "E-mail")}&nbsp;</span><span style='${textStyle}'>${safeEmail}</span><br/>`);
+    }
+
+    // Phone (padrão empresa) + ramal
+    parts.push(`<span>${icon(ICON_PHONE, "Phone")}&nbsp;</span><span style='${textStyle}'>${escapeHtml(COMPANY_PHONE_DISPLAY)}${extTxt}</span><br/>`);
+
+    // WhatsApp (opcional)
+    if (wa?.ok) {
+      parts.push(`<span>${icon(ICON_WHATSAPP, "WhatsApp")}&nbsp;</span><span style='${textStyle}'>${escapeHtml(wa.display)}</span><br/>`);
+    }
+
+    // Aviso de feriado (opcional)
+    if (pt || en) {
+      const lines = [];
+      if (pt) lines.push(`&quot;${pt}&quot;`);
+      if (en) lines.push(`&quot;${en}&quot;`);
+      parts.push(`<br/><span style='${holidayStyle}'>${lines.join("<br/>")}</span><br/>`);
+    } else {
+      parts.push("<br/>");
+    }
+
+    // Banner
+    parts.push(`<img src="${SIGNATURE_IMG}" style="width:${SIGNATURE_WIDTH}px;max-width:${SIGNATURE_WIDTH}px;height:auto;border:0;" />`);
+    return parts.join("");
+  }
+
+
+
+
   function generate() {
     showErr(false);
 
@@ -415,8 +572,11 @@
 
     if (!rawName || !rawEmail) {
       lastGeneratedHtml = "";
+      lastGeneratedSystemHtml = "";
       preview.innerHTML = `<div class="muted">Nenhuma assinatura gerada ainda.</div>`;
+      systemHtml.value = "";
       btnCopy.style.display = "none";
+      btnCopySystem.style.display = "none";
       showErr(true, 'Preencha pelo menos <b>Nome</b> e <b>E-mail</b>.');
       return;
     }
@@ -444,9 +604,23 @@
       extNumber
     });
 
+    const htmlSystem = buildSystemSignatureHTML({
+      name, role, email, wa,
+      holidayPt: rawHolidayPt,
+      holidayEn: rawHolidayEn,
+      extNumber
+    });
+
     lastGeneratedHtml = html;
+    lastGeneratedSystemHtml = htmlSystem;
+
     preview.innerHTML = html;
+    systemHtml.value = htmlSystem;
+
     btnCopy.style.display = "inline-flex";
+    btnCopySystem.style.display = "inline-flex";
+
+    showOk("Assinatura gerada");
   }
 
   function scrollToInstructionsIfExists() {
@@ -472,7 +646,7 @@
     try {
       const ok = document.execCommand("copy");
       if (ok) {
-        showOk("✅ Assinatura copiada");
+        showOk("Assinatura copiada");
         scrollToInstructionsIfExists();
       } else {
         showErr(true, '❌ Não foi possível copiar automaticamente.<br/>Selecione a assinatura e use <b>Ctrl+C</b>.');
@@ -486,6 +660,31 @@
     selection.removeAllRanges();
   }
 
+
+  // Copiar o HTML simples (p/ sistema)
+  function copySystemSignature() {
+    if (!lastGeneratedSystemHtml) return;
+    showErr(false);
+
+    systemHtml.focus();
+    systemHtml.select();
+    systemHtml.setSelectionRange(0, systemHtml.value.length);
+
+    try {
+      const ok = document.execCommand("copy");
+      if (ok) {
+        showOk("Assinatura copiada");
+      } else {
+        showErr(true, '❌ Não foi possível copiar automaticamente.<br/>Selecione o conteúdo do campo e use <b>Ctrl+C</b>.');
+      }
+    } catch (e) {
+      showErr(true, '❌ Bloqueado pelo navegador no SharePoint.<br/>Selecione o conteúdo do campo e use <b>Ctrl+C</b>.');
+    }
+
+    systemHtml.setSelectionRange(0, 0);
+  }
+
+
   document.querySelectorAll('input[name="wa"]').forEach(r => {
     r.addEventListener("change", updateWaVisibility);
     r.addEventListener("click", updateWaVisibility);
@@ -498,6 +697,7 @@
 
   btnGenerate.addEventListener("click", generate);
   btnCopy.addEventListener("click", copySignature);
+  btnCopySystem.addEventListener("click", copySystemSignature);
 
   updateWaVisibility();
   updateExtVisibility();
