@@ -46,9 +46,9 @@
       min-height:220px;
     }
     .muted{color:var(--m); font-size:12px; margin:6px 0 0;}
-  
+
     @media (max-width: 520px){.ok{left:16px;right:16px;max-width:none;}}
-  
+
     /* ===== POPUP CENTRAL (MODAL) ===== */
     .popupBackdrop{
       position:fixed; inset:0;
@@ -70,7 +70,6 @@
     .popupTitle{font-size:14px;font-weight:700;color:var(--t);margin:0 0 8px;}
     .popupText{font-size:14px;line-height:1.35;color:var(--t);}
     .popupActions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;}
-
   </style>
 </head>
 <body>
@@ -150,7 +149,8 @@
           <div class="hint">
             Se preenchido, aparecerá abaixo da assinatura em <b>vermelho</b>, <b>negrito</b> e entre <b>aspas duplas</b>, com PT e EN em sequência.
           </div>
-           <div style="margin-top:14px;" class="row">
+
+          <div style="margin-top:14px;" class="row">
             <button class="btn secondary" id="btnGenerate" type="button">Gerar assinatura</button>
           </div>
 
@@ -198,15 +198,7 @@
     </div>
 
     <!-- Se suas instruções já existem, só adicione id="instrucoes" no container delas -->
-    <!-- Exemplo:
-    <div id="instrucoes" style="margin-top:20px;">
-      <h2>Adicionando assinatura no Outlook</h2>
-      ...
-    </div>
-    -->
-
   </div>
-
 
   <!-- POPUP CENTRAL -->
   <div id="popup" class="popupBackdrop" role="dialog" aria-modal="true" aria-labelledby="popupTitle" style="display:none;">
@@ -218,7 +210,6 @@
       </div>
     </div>
   </div>
-
 
 <script>
   // ====== CONFIG ======
@@ -288,15 +279,12 @@
   const popupTitle = document.getElementById("popupTitle");
   const popupOk = document.getElementById("popupOk");
 
-
   let lastGeneratedHtml = "";
   let lastGeneratedSystemHtml = "";
 
   elLogoTop.src = COMPANY_LOGO_TOP;
 
   function showOk(text) {
-    // Mantém as chamadas existentes (ex.: showOk("Assinatura gerada")),
-    // mas agora abre um popup central com botão OK.
     openPopup(text || "Assinatura copiada");
   }
   function showErr(on, htmlMsg) {
@@ -309,7 +297,6 @@
     if (popupTitle) popupTitle.textContent = title || "Aviso";
     if (popupText) popupText.textContent = message || "";
     popup.style.display = "flex";
-    // Foco no botão OK (melhora UX e acessibilidade)
     setTimeout(() => {
       try { popupOk && popupOk.focus(); } catch(e) {}
     }, 0);
@@ -320,19 +307,15 @@
     popup.style.display = "none";
   }
 
-  // Fechar no OK
   if (popupOk) popupOk.addEventListener("click", closePopup);
 
-  // Fechar clicando fora (no fundo escuro)
   if (popup) popup.addEventListener("click", (e) => {
     if (e.target === popup) closePopup();
   });
 
-  // Fechar com ESC
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && popup && popup.style.display === "flex") closePopup();
   });
-
 
   function stripSuffix(name) {
     if (!name) return "";
@@ -504,7 +487,6 @@
     `.trim();
   }
 
-
   // ====== FORMATO "SISTEMA" (sem tabela, só p/span/br/img) ======
   function buildSystemSignatureHTML({ name, role, email, wa, holidayPt, holidayEn, extNumber }) {
     const safeName = escapeHtml(name);
@@ -521,11 +503,11 @@
 
     // ícones inline (HeadCargo / HTML simples)
     const iconStyle =
-    `width:${ICON_W}px;height:${ICON_W}px;max-width:${ICON_W}px;max-height:${ICON_W}px;` +
-    `vertical-align:middle;border:0;outline:none;text-decoration:none;display:inline-block;`;
+      `width:${ICON_W}px;height:${ICON_W}px;max-width:${ICON_W}px;max-height:${ICON_W}px;` +
+      `vertical-align:middle;border:0;outline:none;text-decoration:none;display:inline-block;`;
 
     const icon = (src, alt) =>
-    `<img src="${src}" alt="${alt}" width="${ICON_W}" height="${ICON_W}" style="${iconStyle}" />`;
+      `<img src="${src}" alt="${alt}" width="${ICON_W}" height="${ICON_W}" style="${iconStyle}" />`;
 
     const extTxt = extNumber ? ` (<span style='color:${NAME_COLOR};'>Ramal</span>: ${escapeHtml(extNumber)})` : "";
 
@@ -557,15 +539,14 @@
       parts.push("<br/>");
     }
 
-    // Banner
+    // ✅ Banner (corrigido: atributo width + display:block)
     parts.push(
-  `<img src="${SIGNATURE_IMG}" alt="RST Logistics" width="${SIGNATURE_WIDTH}" ` +
-  `style="width:${SIGNATURE_WIDTH}px;max-width:${SIGNATURE_WIDTH}px;height:auto;border:0;display:block;outline:none;text-decoration:none;" />`
-);
+      `<img src="${SIGNATURE_IMG}" alt="RST Logistics" width="${SIGNATURE_WIDTH}" ` +
+      `style="width:${SIGNATURE_WIDTH}px;max-width:${SIGNATURE_WIDTH}px;height:auto;border:0;display:block;outline:none;text-decoration:none;" />`
+    );
+
+    return parts.join("");
   }
-
-
-
 
   function generate() {
     showErr(false);
@@ -666,7 +647,6 @@
     selection.removeAllRanges();
   }
 
-
   // Copiar o HTML simples (p/ sistema)
   function copySystemSignature() {
     if (!lastGeneratedSystemHtml) return;
@@ -689,7 +669,6 @@
 
     systemHtml.setSelectionRange(0, 0);
   }
-
 
   document.querySelectorAll('input[name="wa"]').forEach(r => {
     r.addEventListener("change", updateWaVisibility);
