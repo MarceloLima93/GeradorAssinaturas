@@ -558,8 +558,10 @@
     }
 
     // Banner
-    parts.push(`<img src="${SIGNATURE_IMG}" style="width:${SIGNATURE_WIDTH}px;max-width:${SIGNATURE_WIDTH}px;height:auto;border:0;" />`);
-    return parts.join("");
+    parts.push(
+  `<img src="${SIGNATURE_IMG}" alt="RST Logistics" width="${SIGNATURE_WIDTH}" ` +
+  `style="width:${SIGNATURE_WIDTH}px;max-width:${SIGNATURE_WIDTH}px;height:auto;border:0;display:block;outline:none;text-decoration:none;" />`
+);
   }
 
 
