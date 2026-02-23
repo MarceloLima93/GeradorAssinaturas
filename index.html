@@ -519,9 +519,13 @@
     const textStyle  = "font-family: Calibri; font-size: 12pt;";
     const holidayStyle = "margin: 0px; color: #b91c1c; font-weight: bold; font-family: Calibri; font-size: 12pt;";
 
-    // ícones inline (mesmos do modelo)
-    const iconStyle = `width:${ICON_W}px;height:${ICON_W}px;vertical-align:middle;border:0;outline:none;text-decoration:none;`;
-    const icon = (src, alt) => `<img src="${src}" alt="${alt}" style="${iconStyle}" />`;
+    // ícones inline (HeadCargo / HTML simples)
+    const iconStyle =
+    `width:${ICON_W}px;height:${ICON_W}px;max-width:${ICON_W}px;max-height:${ICON_W}px;` +
+    `vertical-align:middle;border:0;outline:none;text-decoration:none;display:inline-block;`;
+
+    const icon = (src, alt) =>
+    `<img src="${src}" alt="${alt}" width="${ICON_W}" height="${ICON_W}" style="${iconStyle}" />`;
 
     const extTxt = extNumber ? ` (<span style='color:${NAME_COLOR};'>Ramal</span>: ${escapeHtml(extNumber)})` : "";
 
